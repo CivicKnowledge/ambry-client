@@ -7,7 +7,7 @@ objects the library returns.
 
 The `Client` object has these methods:
 
-- `list` Return a list of  Dataset objects, one for each dataset in the library. The Dataset objects
+- ``list`` Return a list of  Dataset objects, one for each dataset in the library. The Dataset objects
     have a limited number of fields, fewer than those returned by `dataset()`
 - `dataset(ref)` Return the file dataset, with all of the fields. Most significantly is the ``partitions``
     property, which holds records for all of the files in the dataset.
