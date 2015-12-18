@@ -1,0 +1,8 @@
+#/bin/env python
+"""Command line client to download files from an Ambry library
+
+Copyright (c) 2015 Civic Knowledge. This file is licensed under the terms of
+the Revised BSD License, included in this distribution as LICENSE.txt
+
+"""
+
