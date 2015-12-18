@@ -12,7 +12,7 @@ The `Client` object has these methods:
 - ``partition(ref)`` Return a partition, with all of its fields.
 
 
-If you use ``list()`` to get datasets, they will have a subset of the available fields, to make the reuqest faster. To get the complete list use the ``Dataset.detailed`` property to re-request all of the fields. 
+If you use ``list()`` to get datasets, they will have a subset of the available fields, to make the reuqest faster. To get the complete list use the ``Dataset.detailed`` property to re-request all of the fields.
 
 
 Example
