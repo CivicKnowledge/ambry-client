@@ -1,8 +1,8 @@
 Ambry Client
 =============
 
-A client application for Ambry libraries. The client presents a simple interfaces that returns acessors objects,
-providing a think attrubute interface on the dictionaries your normally get fro mdirectly converting the JSON
+A client application for Ambry libraries. The client presents a simple interface that returns acessors objects,
+providing a thin attrubute interface on the dictionaries you normally get by directly converting the JSON
 objects the library returns.
 
 The `Client` object has these methods:
@@ -14,9 +14,25 @@ The `Client` object has these methods:
 
 If you use ``list()`` to get datasets, they will have a subset of the available fields, to make the reuqest faster. To get the complete list use the ``Dataset.detailed`` property to re-request all of the fields.
 
+Locating Properties
+-------------------
+
+There are a lot of properties for each object, dynamically generated from the response from the Library server. To get a sense of what properties are available, you can either iterate over the Dataset or Partition object as a dictionary, using ``keys()``, ``values()`` or ``items()``, or view the JSON output on the Library website, available from the blue '{json}' buttons in the footer.
+
+Writing Files
+-------------
+
+The Partition object have several methods for acessing row information and writing CSV files:
+
+- ``rows`` returns an iterator, over the rows in the file. The first row is the header
+- ``csvlines`` returns an iterator, iterating over CSV formatted lines.
+- ``write_csv(path)`` writes the data in the partition to a CSV file.
+
 
 Example
 -------
+
+Here is a simple example of iterating over all of the partitions in a library, printing out the dataset and partition titles, and writing CSV files:
 
 .. code-block:: python
 

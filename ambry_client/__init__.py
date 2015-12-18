@@ -18,9 +18,11 @@ class AttrDict(OrderedDict):
         super(AttrDict, self).__init__(*argz, **kwz)
 
     def __setitem__(self, k, v):
+        assert not isinstance(k, list)
         super(AttrDict, self).__setitem__(k, AttrDict(v) if isinstance(v, Mapping) else v)
 
     def __getattr__(self, k):
+        assert not isinstance(k, list)
         if not (k.startswith('__') or k.startswith('_OrderedDict__')):
             return self[k]
         else:
@@ -34,6 +36,10 @@ class AttrDict(OrderedDict):
     def __iter__(self):
         return iterkeys(super(OrderedDict, self))
 
+    def items(self):
+        for k in self:
+            if not k.startswith('_'):
+                yield (k, self[k])
 
     @property
     def dict(self):
@@ -171,11 +177,19 @@ class Dataset(AttrDict):
 class Partition(AttrDict):
 
     def __init__(self, client,  d):
+
         super(Partition, self).__init__(d)
 
         self.__client = client
 
-    def __iter__(self):
+    def rows(self):
+        """Return an iterator over rows of the data file. The first row is the headers.
+
+        Unlike iterating over the CSV file, these rows will have data types that match the schema.
+
+        FIXME: Dates are probably broken, though.
+        """
+        raise Exception()
         import msgpack
 
 
