@@ -7,10 +7,13 @@ objects the library returns.
 
 The `Client` object has these methods:
 
-- `list()` Return a list of  Dataset objects, one for each dataset in the library. The Dataset objects
-    have a limited number of fields, fewer than those returned by `dataset()`
-- `dataset(ref)` Return the file dataset, with all of the fields. Most significantly is the ``partitions`
-    property, which holds records for all of the files in the dataset.
+- ``list()`` Return a list of  Dataset objects, one for each dataset in the library. The Dataset objects have a limited number of fields, fewer than those returned by ``dataset()``
+- ``dataset(ref)`` Return a dataset, with all of the fields. Most significantly is the ``partitions`` property, which holds records for all of the files in the dataset.
+- ``partition(ref)`` Return a partition, with all of its fields.
+
+
+If you use ``list()`` to get datasets, they will have a subset of the available fields, to make the reuqest faster. To get the complete list use the ``Dataset.detailed`` property to re-request all of the fields. 
+
 
 Example
 -------
@@ -25,6 +28,7 @@ Example
     client = Client(base_url)
 
     for ds in client.list():
+
 
         print ds.vid, ds.title
 
