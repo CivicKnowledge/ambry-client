@@ -79,6 +79,6 @@ for ds in client.list():
                 if not os.path.exists(dirname):
                     os.makedirs(dirname)
                 p.write_csv(fn)
-                print("Wrote:  {}".format(fn))
+                print('  ',"Wrote:  {}".format(fn))
             else:
-                print("Exists: {}".format(fn))
+                print('  ',"Exists: {}".format(fn))
