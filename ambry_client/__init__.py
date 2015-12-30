@@ -1,6 +1,5 @@
-"""Value Types for Census codes, primarily geoids.
+""" Ambry Web Client
 
-The value converters can recognize, parse, normalize and transform common codes, such as FIPS, ANSI and census codes.
 
 Copyright (c) 2015 Civic Knowledge. This file is licensed under the terms of
 the Revised BSD License, included in this distribution as LICENSE.txt
@@ -11,6 +10,8 @@ from collections import OrderedDict, Mapping
 import requests
 from six import iterkeys
 
+
+
 # http://pypi.python.org/pypi/layered-yaml-attrdict-config/12.07.1
 class AttrDict(OrderedDict):
     """An ordered dictionary with a property interface to all keys"""
@@ -19,22 +20,24 @@ class AttrDict(OrderedDict):
 
     def __setitem__(self, k, v):
         assert not isinstance(k, list)
-        super(AttrDict, self).__setitem__(k, AttrDict(v) if isinstance(v, Mapping) else v)
+        super(AttrDict, self).__setitem__(k, AttrDict(v)
+            if (isinstance(v, Mapping) and not isinstance(v, AttrDict)) else v)
 
     def __getattr__(self, k):
         assert not isinstance(k, list)
-        if not (k.startswith('__') or k.startswith('_OrderedDict__')):
-            return self[k]
-        else:
+        if k.startswith('__') or k.startswith('_OrderedDict__'):
             return super(AttrDict, self).__getattr__(k)
+        return self[k]
 
     def __setattr__(self, k, v):
-        if k.startswith('_OrderedDict__'):
+        if k.startswith('__') or k.startswith('_OrderedDict__'):
             return super(AttrDict, self).__setattr__(k, v)
         self[k] = v
 
     def __iter__(self):
-        return iterkeys(super(OrderedDict, self))
+        for k in  iterkeys(super(OrderedDict, self)):
+            if not k.startswith('_'):
+                yield k
 
     def items(self):
         for k in self:
@@ -56,16 +59,36 @@ class AttrDict(OrderedDict):
 
         return root
 
+from ambry.orm.exc import NotFoundError
+
 class Client(object):
     """Web client object for raw web requests"""
 
+    auth_t = "{base_url}/auth"
     list_t = "{base_url}/json"
     dataset_t = "{base_url}/json/bundle/{ref}"
     partition_t = "{base_url}/json/partition/{ref}"
     file_t = "{base_url}/file/{ref}.{ct}"
 
-    def __init__(self, url):
+    def __init__(self, url, auth_token = None):
         self._url = url
+        self.auth_token = auth_token
+
+    def auth(self, user, password):
+        import json
+        url = self._make_url(self.auth_t)
+        r = requests.post(url, json={'username':user,'password': password})
+        r.raise_for_status()
+        self.auth_token = r.json()['access_token']
+
+
+        return self.auth_token
+
+    @property
+    def library(self):
+        """The Library is just a subclass of the Client"""
+
+        return Library(self._url, self.auth_token)
 
     def list(self):
         """ Return a list of all of the datasets in the library
@@ -75,7 +98,6 @@ class Client(object):
         o = self._get(self.list_t)
 
         return [ Dataset( self, b ) for b in o['bundles'] ]
-
 
     def dataset(self, ref):
         """
@@ -88,6 +110,16 @@ class Client(object):
 
         return Dataset(self, o['dataset'], partitions=o['partitions'], detailed = True)
 
+    def bundle(self, ref):
+        """
+        Return a bundle, given a vid, id, name or vname. A bundle is a dataset with additional interfaces
+        :param ref:
+        :return:
+        """
+
+        o = self._get(self.dataset_t, ref=ref)
+
+        return Bundle(self, o['dataset'], partitions=o['partitions'], detailed=True)
 
     def partition(self, ref):
         """
@@ -128,11 +160,66 @@ class Client(object):
             yield line
 
 
+    def _headers(self, **kwargs):
+        h = {}
+
+        if self.auth_token:
+            h['Authorization'] = "JWT {}".format(self.auth_token)
+
+        for k, v in kwargs.items():
+            k = k.replace('_', '-').capitalize()
+            h[k] = v
+
+        return h
+
+    def _process_status(self, r):
+        if r.status_code == 404:
+            raise NotFoundError("Not found: {}".format(r.request.url))
+        r.raise_for_status()
+
+    def _put(self, template, data, **kwargs):
+        import json
+        url = self._make_url(template, **kwargs)
+        r = requests.put(url, data=json.dumps(data), headers=self._headers(content_type="application/json"))
+        self._process_status(r)
+        return r.json()
+
     def _get(self, template, **kwargs):
         url = self._make_url(template, **kwargs)
 
-        r = requests.get(url)
-        r.raise_for_status()
+        r = requests.get(url, headers=self._headers())
+
+        self._process_status(r)
+        if r.headers['content-type'] == 'application/json':
+            return r.json()
+        else:
+            return r.content
+
+    def _delete(self, template, **kwargs):
+        url = self._make_url(template, **kwargs)
+
+        r = requests.delete(url, headers=self._headers())
+        self._process_status(r)
+        if r.headers['content-type'] == 'application/json':
+            return r.json()
+        else:
+            return r.content
+
+    def _post_file(self, path, template, **kwargs):
+        import os
+
+        headers = self._headers(
+            content_type="application/json",
+            content_length=os.path.getsize(path),
+            content_transfer_encoding='binary'
+        )
+
+        url = self._make_url(template, **kwargs)
+
+        with open(path, 'rb') as f:
+            r = requests.post(url, data=f, headers=headers)
+
+        self._process_status(r)
         return r.json()
 
     def _make_url(self, template, **kwargs):
@@ -172,6 +259,16 @@ class Dataset(AttrDict):
         :return: Dataset """
 
         return self.__client.dataset(self.vid)
+
+    @property
+    def bundle(self):
+        """
+        Refetch the dataset, with all of it's details. Use when expanding a dataset entry
+        from the list
+
+        :return: Dataset """
+
+        return self.__client.bundle(self.vid)
 
 
 class Partition(AttrDict):
@@ -230,3 +327,6 @@ class Partition(AttrDict):
                 f.write(row)
                 f.write(os.linesep)
 
+
+from .bundle import Bundle
+from .library import Library

@@ -30,6 +30,8 @@ args = parser.parse_args()
 
 client = Client(args.url[0])
 
+# FIXME! This is the least efficient way to select a subset of files, but it is
+# easy to implement.
 def should_download(p):
 
     if not args.partitions:
@@ -47,6 +49,7 @@ def should_download(p):
 
 displayed_datasets = set()
 
+
 for ds in client.list():
 
     for p in ds.partitions:
@@ -59,7 +62,7 @@ for ds in client.list():
             displayed_datasets.add(ds.vid)
             print(ds.vid, ds.vname, ds.title)
 
-        print('  ', p.vid, p.vname, p.description)
+        print('  ', p.vid, p.vname, p.description.encode('ascii', 'ignore') if p.description else '' )
 
         if args.vid:
             ref = p.vid

@@ -36,7 +36,7 @@ Using one or more of these names, you can download specific files, or all of the
 
     $ ambrydl http://example.com d03r003 cdph.ca.gov-hci-abuse_neglect-california
 
-By default, the files will be written with the cache key, which is the standard path name for ambry files. YOu can also use the ```-v`` option to write the file names using the vid, or ``-n`` to write the files using the vname.
+By default, the files will be written with the cache key, which is the standard path name for ambry files. You can also use the ``-v`` option to write the file names using the vid, or ``-n`` to write the files using the vname.
 
 
 API
