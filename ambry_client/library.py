@@ -58,7 +58,9 @@ class Library(Client):
         else:
             cb_one_arg = None
 
-        return self._post_file(path, self.checkin_t, vid=bundle.identity.vid)
+        self._post_file(path, self.checkin_t, vid=bundle.identity.vid)
+
+        return self, path
 
     def remove(self, ref, cb=None):
         from ambry.orm.exc import NotFoundError
@@ -66,3 +68,6 @@ class Library(Client):
 
         return self._delete(self.remove_t, ref=ref)
 
+
+    def __str__(self):
+        return self._url

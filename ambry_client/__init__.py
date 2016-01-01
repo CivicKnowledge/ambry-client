@@ -70,25 +70,17 @@ class Client(object):
     partition_t = "{base_url}/json/partition/{ref}"
     file_t = "{base_url}/file/{ref}.{ct}"
 
-    def __init__(self, url, auth_token = None):
+    def __init__(self, url, api_secret = None, username=None, password=None):
         self._url = url
-        self.auth_token = auth_token
-
-    def auth(self, user, password):
-        import json
-        url = self._make_url(self.auth_t)
-        r = requests.post(url, json={'username':user,'password': password})
-        r.raise_for_status()
-        self.auth_token = r.json()['access_token']
-
-
-        return self.auth_token
+        self.api_secret = api_secret
+        self.username = username
+        self.password = password
 
     @property
     def library(self):
         """The Library is just a subclass of the Client"""
 
-        return Library(self._url, self.auth_token)
+        return Library(self._url, self.api_secret, self.username, self.password)
 
     def list(self):
         """ Return a list of all of the datasets in the library
@@ -161,10 +153,13 @@ class Client(object):
 
 
     def _headers(self, **kwargs):
+        from jose import jwt
+
         h = {}
 
-        if self.auth_token:
-            h['Authorization'] = "JWT {}".format(self.auth_token)
+        if self.api_secret and self.username and self.password:
+            t = jwt.encode({ 'u':self.username, 'p':self.password},self.api_secret, algorithm='HS256')
+            h['Authorization'] = "JWT {}".format(t)
 
         for k, v in kwargs.items():
             k = k.replace('_', '-').capitalize()
