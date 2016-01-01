@@ -69,18 +69,47 @@ class Client(object):
     dataset_t = "{base_url}/json/bundle/{ref}"
     partition_t = "{base_url}/json/partition/{ref}"
     file_t = "{base_url}/file/{ref}.{ct}"
+    test_t = "{base_url}/test"
 
-    def __init__(self, url, api_secret = None, username=None, password=None):
+    def __init__(self, url, jwt_secret = None):
         self._url = url
-        self.api_secret = api_secret
+        self.jwt_secret = jwt_secret
+        self.auth_token = None
+        self.username = None
+        self.password = None
+
+    def authenticate(self, username, password, jwt_secret=None):
+        from jose import jwt
+
+        if jwt_secret:
+            self.jwt_secret = jwt_secret
+
         self.username = username
         self.password = password
+
+        t = jwt.encode({'u': self.username, 'p': self.password}, self.jwt_secret, algorithm='HS256')
+
+        r  = self._put(self.auth_t, data = dict(token=t))
+
+        self.auth_token = r['jwt']
+
+        return self.auth_token
+
 
     @property
     def library(self):
         """The Library is just a subclass of the Client"""
 
-        return Library(self._url, self.api_secret, self.username, self.password)
+        return Library(self._url, self.jwt_secret, self.username, self.password)
+
+    def test(self):
+        """
+        Test the connection and authentication
+        :param ref:
+        :return:
+        """
+
+        return self._get(self.test_t)
 
     def list(self):
         """ Return a list of all of the datasets in the library
@@ -157,9 +186,8 @@ class Client(object):
 
         h = {}
 
-        if self.api_secret and self.username and self.password:
-            t = jwt.encode({ 'u':self.username, 'p':self.password},self.api_secret, algorithm='HS256')
-            h['Authorization'] = "JWT {}".format(t)
+        if self.auth_token:
+            h['Authorization'] = "JWT {}".format(self.auth_token)
 
         for k, v in kwargs.items():
             k = k.replace('_', '-').capitalize()
