@@ -71,36 +71,19 @@ class Client(object):
     file_t = "{base_url}/file/{ref}.{ct}"
     test_t = "{base_url}/test"
 
-    def __init__(self, url, jwt_secret = None):
+    def __init__(self, url, username=None, password=None, jwt_secret = None):
         self._url = url
-        self.jwt_secret = jwt_secret
-        self.auth_token = None
-        self.username = None
-        self.password = None
-
-    def authenticate(self, username, password, jwt_secret=None):
-        from jose import jwt
-
-        if jwt_secret:
-            self.jwt_secret = jwt_secret
 
         self.username = username
         self.password = password
-
-        t = jwt.encode({'u': self.username, 'p': self.password}, self.jwt_secret, algorithm='HS256')
-
-        r  = self._put(self.auth_t, data = dict(token=t))
-
-        self.auth_token = r['jwt']
-
-        return self.auth_token
+        self.jwt_secret = jwt_secret
 
 
     @property
     def library(self):
         """The Library is just a subclass of the Client"""
 
-        return Library(self._url, self.jwt_secret, self.username, self.password)
+        return Library(self._url, self.username, self.password, self.jwt_secret)
 
     def test(self):
         """
@@ -186,12 +169,14 @@ class Client(object):
 
         h = {}
 
-        if self.auth_token:
-            h['Authorization'] = "JWT {}".format(self.auth_token)
+        if self.username and self.password:
+            t = jwt.encode({'u': self.username }, self.password, algorithm='HS256')
+            h['Authorization'] = "JWT {}:{}".format(self.username,t)
 
         for k, v in kwargs.items():
             k = k.replace('_', '-').capitalize()
             h[k] = v
+
 
         return h
 
