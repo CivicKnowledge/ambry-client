@@ -44,12 +44,11 @@ class Library(Client):
 
         return self._put(self.accounts_t, data=new_accounts)['accounts']
 
-    def checkin(self, bundle, checkin_partitions=True, cb=None):
+    def checkin(self, package, checkin_partitions=True, cb=None):
         from ambry.orm.exc import NotFoundError
         import os.path
-        path = bundle.build_fs.getsyspath(bundle.identity.cache_key + '.db')
 
-        if not os.path.exists(path):
+        if not os.path.exists(package.path):
             raise NotFoundError("Database is not packaged. Create one by building, or run 'bambry package' " )
 
         if cb:
@@ -58,9 +57,18 @@ class Library(Client):
         else:
             cb_one_arg = None
 
-        self._post_file(path, self.checkin_t, vid=bundle.identity.vid)
+        ds = package.package_dataset
 
-        return self, path
+        self._post_file(package.path, self.checkin_t, vid=ds.identity.vid)
+
+        if False and package.library:
+            from ambry.orm import Bundle
+            bundle = Bundle(ds, package.library)
+
+            for p in bundle.partitions:
+                self._put_partition_fs(remote, p, cb=cb)
+
+        return self, package.path
 
     def remove(self, ref, cb=None):
         from ambry.orm.exc import NotFoundError
