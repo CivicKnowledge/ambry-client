@@ -1,41 +1,49 @@
-import unittest
+
+from flask import Flask
+from flask.ext.testing import LiveServerTestCase
 from ambry_client import Client
 
-class BasicTests(unittest.TestCase):
+import os
+os.environ['AMBRY_DB'] = 'sqlite:////tmp/foo.db'
 
-    library_url = None
 
-    @classmethod
-    def setUpClass(cls):
-        import os
+class MyTest(LiveServerTestCase):
 
-        cls.library_url = os.getenv('AMBRY_LIBRARY_URL')
+    def setUp(self):
 
-        assert cls.library_url is not None, 'Must set AMBRY_LIBRARY_URL environmental variable'
+        self.username = 'user'
+        self.secret = 'secret'
 
-        print "Testing library at :", cls.library_url
+        self.setup_user()
+
+    def create_app(self):
+
+        from ambry_ui import app
+        import ambry_ui.views
+        import ambry_ui.jsonviews
+        import ambry_ui.api
+        import ambry_ui.user
+
+        return app
+
+    def setup_user(self):
+        from ambry.library import Library
+        from ambry.run import get_runconfig
+
+        rc = get_runconfig()
+        l = Library(rc, read_only=True, echo=False)
+
+        act = l.find_or_new_account(self.username)
+        act.secret = self.secret
+        act.major_type = 'user'
+        l.commit()
+        l.database.close()
+
     def test_something(self):
 
-        c = Client(self.library_url)
+        c = Client(self.get_server_url(), self.username, self.secret)
 
-        for d in c.list():
-            print d.vid, d.name
-            d = d.detailed
-
-            for p in d.partitions:
-                print '   ', p.name, p.description
-
-
-        p = c.partition('p04O002001')
-
-        print p.name
-        print p.description
-
-        p.write_csv('/tmp/foo.csv')
-
-        for r in p:
-            print r
-
+        self.assertEqual(dict(a=1,b=2), c.test(a=1,b=2))
 
 
 if __name__ == '__main__':

@@ -69,30 +69,28 @@ class Client(object):
     dataset_t = "{base_url}/json/bundle/{ref}"
     partition_t = "{base_url}/json/partition/{ref}"
     file_t = "{base_url}/file/{ref}.{ct}"
-    test_t = "{base_url}/test"
+    test_t = "{base_url}/auth-test"
 
-    def __init__(self, url, username=None, password=None, jwt_secret = None):
+    def __init__(self, url, username=None, secret = None):
         self._url = url
 
         self.username = username
-        self.password = password
-        self.jwt_secret = jwt_secret
-
+        self.secret = secret
 
     @property
     def library(self):
         """The Library is just a subclass of the Client"""
 
-        return Library(self._url, self.username, self.password, self.jwt_secret)
+        return Library(self._url, self.username, self.secret)
 
-    def test(self):
+    def test(self, **kwargs):
         """
         Test the connection and authentication
         :param ref:
         :return:
         """
 
-        return self._get(self.test_t)
+        return self._put(self.test_t, data=kwargs)
 
     def list(self):
         """ Return a list of all of the datasets in the library
@@ -157,7 +155,7 @@ class Client(object):
     def streamed_file(self, ref, ct):
         url = self._make_url(self.file_t, ref=ref, ct=ct)
 
-        r = requests.get(url, stream=True)
+        r = requests.get(url, stream=True, headers=self._headers())
         r.raise_for_status()
 
         for line in r.iter_lines():
@@ -169,14 +167,13 @@ class Client(object):
 
         h = {}
 
-        if self.username and self.password:
-            t = jwt.encode({'u': self.username }, self.password, algorithm='HS256')
+        if self.username and self.secret:
+            t = jwt.encode({'u': self.username }, self.secret, algorithm='HS256')
             h['Authorization'] = "JWT {}:{}".format(self.username,t)
 
         for k, v in kwargs.items():
             k = k.replace('_', '-').capitalize()
             h[k] = v
-
 
         return h
 
@@ -188,6 +185,7 @@ class Client(object):
     def _put(self, template, data, **kwargs):
         import json
         url = self._make_url(template, **kwargs)
+
         r = requests.put(url, data=json.dumps(data), headers=self._headers(content_type="application/json"))
         self._process_status(r)
         return r.json()
@@ -296,7 +294,6 @@ class Partition(AttrDict):
         """
         raise Exception()
         import msgpack
-
 
         class StreamedBuf(object):
 

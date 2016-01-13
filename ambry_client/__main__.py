@@ -9,8 +9,15 @@ from __future__ import print_function
 import argparse
 from . import Client
 import os
+import sys
+
+from requests.exceptions import HTTPError
 
 parser = argparse.ArgumentParser(prog='ambrydl',description='Ambry library download client')
+
+parser.add_argument('-u', '--username', help='Username, for private access')
+parser.add_argument('-s', '--secret', help='API Secret, for private access')
+
 
 parser.add_argument('-l', '--list', default=False, action='store_true',
                     help='List, rather than download')
@@ -28,7 +35,15 @@ parser.add_argument('partitions', nargs=argparse.REMAINDER,
 
 args = parser.parse_args()
 
-client = Client(args.url[0])
+if not args.username:
+    client = Client(args.url[0])
+else:
+    try:
+        client = Client(args.url[0], args.username, args.secret)
+        client.test()
+    except HTTPError as e:
+        print("Connection failed: {}".format(e))
+        sys.exit(1)
 
 # FIXME! This is the least efficient way to select a subset of files, but it is
 # easy to implement.
@@ -48,7 +63,6 @@ def should_download(p):
     return False
 
 displayed_datasets = set()
-
 
 for ds in client.list():
 
@@ -77,11 +91,16 @@ for ds in client.list():
             fn = os.path.join(args.dir, fn)
 
         if not args.list:
-            if not os.path.exists(fn):
-                dirname = os.path.dirname(fn)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                p.write_csv(fn)
-                print('  ',"Wrote:  {}".format(fn))
-            else:
-                print('  ',"Exists: {}".format(fn))
+            try:
+                if not os.path.exists(fn):
+                    dirname = os.path.dirname(fn)
+                    if not os.path.exists(dirname):
+                        os.makedirs(dirname)
+                    p.write_csv(fn)
+                    print('  ',"Wrote:  {}".format(fn))
+                else:
+                    print('  ',"Exists: {}".format(fn))
+            except HTTPError as e:
+                print("Failed to download {}: {}".format(p.vname, e))
+                if os.path.exists(fn):
+                    os.remove(fn)

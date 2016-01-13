@@ -35,7 +35,6 @@ class Library(Client):
 
         # Decrypt the passwords, then re-encrypt them.
 
-
         return self._get(self.accounts_t)['accounts']
 
     @accounts.setter

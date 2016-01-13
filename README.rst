@@ -38,6 +38,12 @@ Using one or more of these names, you can download specific files, or all of the
 
 By default, the files will be written with the cache key, which is the standard path name for ambry files. You can also use the ``-v`` option to write the file names using the vid, or ``-n`` to write the files using the vname.
 
+Authentication
+**************
+
+To authenticate with the command line client, use the ``-u`` option to specify a username, and the ``-s`` option to
+specify a secret. These values can be set on the server site using the ``ambry ui user add`` command.
+
 
 API
 ---
