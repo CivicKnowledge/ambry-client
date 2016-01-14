@@ -59,7 +59,8 @@ class AttrDict(OrderedDict):
 
         return root
 
-from ambry.orm.exc import NotFoundError
+class NotFoundError(Exception):
+    pass
 
 class Client(object):
     """Web client object for raw web requests"""
@@ -70,6 +71,7 @@ class Client(object):
     partition_t = "{base_url}/json/partition/{ref}"
     file_t = "{base_url}/file/{ref}.{ct}"
     test_t = "{base_url}/auth-test"
+    resolve_t = "{base_url}/resolve/{ref}"
 
     def __init__(self, url, username=None, secret = None):
         self._url = url
@@ -134,6 +136,21 @@ class Client(object):
 
         return Partition(self, o['partition'])
 
+    def resolve(self, ref):
+        """Return information about either a partition or a bundle
+
+        :param ref: Any kind of bundle or partition reference
+
+        :return: (bundle, partition). If the ref is to a bundle, the partition will be None
+        """
+
+        o = self._get(self.resolve_t, ref=ref)
+
+        if 'partition' in o:
+            return (Bundle(self, o['bundle'], partitions=None, detailed=False),
+                    Partition(self, o['partition']) )
+        else:
+            return (Bundle(self, o['bundle'], partitions=None, detailed=False), False )
 
     def search(self, query):
         """
@@ -235,6 +252,14 @@ class Client(object):
 class Dataset(AttrDict):
 
     def __init__(self, client, d, partitions = None, detailed = False):
+        """
+
+        :param client:
+        :param d:
+        :param partitions:
+        :param detailed: If true, the partitions have already been loaded
+        :return:
+        """
 
         super(Dataset, self).__init__(d)
 

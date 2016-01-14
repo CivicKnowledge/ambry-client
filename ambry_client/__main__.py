@@ -12,6 +12,7 @@ import os
 import sys
 
 from requests.exceptions import HTTPError
+from . import NotFoundError
 
 parser = argparse.ArgumentParser(prog='ambrydl',description='Ambry library download client')
 
@@ -64,12 +65,26 @@ def should_download(p):
 
 displayed_datasets = set()
 
+
+# If there references given, resolve them to partition ids.
+vids = []
+for ref in args.partitions:
+    try:
+        b, p = client.resolve(ref)
+        if p:
+            vids.append(p.vid)
+        else:
+            for p in b.partitions:
+                vids.append(p.vid)
+    except NotFoundError:
+        print("Error: not found: {}".format(ref))
+
 for ds in client.list():
 
     for p in ds.partitions:
         p.dataset = ds
 
-        if not should_download(p):
+        if vids and p.vid not in vids:
             continue
 
         if ds.vid not in displayed_datasets:
