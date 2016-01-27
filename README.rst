@@ -16,14 +16,22 @@ Installation
 Command Line Client
 -------------------
 
-The ambry-client package also installs a command line program ``ambrydl``. Run ``ambrydl -h`` for the help message. If you want download all of the files from a library:
-
+The ambry-client package also installs a command line program ``ambrydl``. Run ``ambrydl -h`` for the help message.
+If you want download all of the public files from a library:
 
 .. code-block:: bash
 
     $ ambrydl http://example.com
 
-If you want to download a subset of the files, you can specify a subset of datasets or files using their vid or vnames. These are viewable in the web interface, or using the ``ambrydl -l`` command. These values look like:
+If the files in the library are not public, you will need to set a username and secret. ( Note that the secret is
+used for the API, and is different from the password, which is used in the web UI )
+
+.. code-block:: bash
+
+    $ ambrydl -u eric -s ABwq9ZAch3Jiy4CPce8r http://example.com
+
+If you want to download a subset of the files, you can specify a subset of datasets or files using their vid or vnames.
+These are viewable in the web interface, or using the ``ambrydl -l`` command. These values look like:
 
 - File vid: p03r003003
 - File name: oshpd.ca.gov-pqi-pqi-county-0.0.3
@@ -84,10 +92,9 @@ Here is a simple example of iterating over all of the partitions in a library, p
 
     base_url = 'http://localhost:8080'
 
-    client = Client(base_url)
+    client = Client(base_url, username, secret)
 
     for ds in client.list():
-
 
         print ds.vid, ds.title
 

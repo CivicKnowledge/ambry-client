@@ -44,6 +44,22 @@ class AttrDict(OrderedDict):
             if not k.startswith('_'):
                 yield (k, self[k])
 
+    @staticmethod
+    def flatten_dict(data, path=tuple()):
+        from six import iteritems
+        dst = list()
+        for k, v in iteritems(data):
+            k = path + (k,)
+            if isinstance(v, Mapping):
+                for v in v.flatten(k):
+                    dst.append(v)
+            else:
+                dst.append((k, v))
+        return dst
+
+    def flatten(self, path=tuple()):
+        return self.flatten_dict(self, path=path)
+
     @property
     def dict(self):
         root = {}
@@ -334,7 +350,6 @@ class Partition(AttrDict):
         for unpacked in unpacker:
             yield unpacked
 
-
     @property
     def csv_lines(self):
         """Return data, as CSV rows"""
@@ -342,20 +357,27 @@ class Partition(AttrDict):
         for row in self.__client.streamed_file(self.vid, 'csv'):
             yield row
 
-
-        unpacker = msgpack.Unpacker(buf)
-        for unpacked in unpacker:
-            print unpacked
-
-
-    def write_csv(self, path):
+    def write_csv(self, path, cb=None):
         """Write CSV data to a file or fle-like object"""
         import os
 
         with open(path, 'w') as f:
-            for row in self.__client.streamed_file(self.vid, 'csv'):
+            for i, row in enumerate(self.__client.streamed_file(self.vid, 'csv')):
                 f.write(row)
                 f.write(os.linesep)
+
+                if i % 10000 == 0 and cb:
+                    cb(i)
+
+
+
+    def write_json_meta(self, path):
+        """Write CSV data to a file or file-like object"""
+        import os
+        import json
+
+        with open(path, 'w') as f:
+            json.dump(self.dict, f, indent=4)
 
 
 from .bundle import Bundle

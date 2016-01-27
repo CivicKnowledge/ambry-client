@@ -22,24 +22,41 @@ def download_partition(args, client, p):
         ref = p.cache_key
 
     fn = '{}.csv'.format(ref)
+    jfn = '{}.json'.format(ref)
 
     if args.dir:
         fn = os.path.join(args.dir, fn)
+        jfn = os.path.join(args.dir, jfn)
 
-    if not args.list:
-        try:
-            if not os.path.exists(fn):
-                dirname = os.path.dirname(fn)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                p.write_csv(fn)
-                print('  ', "Wrote:  {}".format(fn))
-            else:
-                print('  ', "Exists: {}".format(fn))
-        except HTTPError as e:
-            print("Failed to download {}: {}".format(p.vname, e))
-            if os.path.exists(fn):
-                os.remove(fn)
+
+    def cb(m):
+        print(m)
+
+
+
+    try:
+        if not os.path.exists(fn):
+            dirname = os.path.dirname(fn)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+
+            p.write_csv(fn)
+            p.write_json_meta(jfn)
+
+            print('  ', "Wrote:  {}".format(fn))
+        else:
+            print('  ', "Exists: {}".format(fn))
+
+    except HTTPError as e:
+        print("ERROR Failed (a) to download {}: {}".format(p.vname, e))
+        if os.path.exists(fn):
+            os.remove(fn)
+    except Exception as e:
+
+        print("ERROR Failed (b) to download {}: {}".format(p.vname, e))
+
+        if os.path.exists(fn):
+            os.remove(fn)
 
 
 def main():
@@ -101,8 +118,11 @@ def main():
 
     if args.partitions and not res_refs:
         # partitions were specified, but none were valid:
+        print("None", args.partitions, res_refs)
         return
-
+    elif not res_refs:
+        for e in client.list():
+            res_refs[e.vid] = set()
 
     # Print the bundle/partition list, and maybe download them
     for bundle_vid, part_set in res_refs.items():
@@ -115,7 +135,8 @@ def main():
             if not part_set or p.vid in part_set:
                 print('  ', p.vid, p.vname, p.description.encode('ascii', 'ignore') if p.description else '')
 
-                download_partition(args, client, p)
+                if not args.list:
+                    download_partition(args, client, p)
 
 
 
