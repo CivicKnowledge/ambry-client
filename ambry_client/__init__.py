@@ -217,7 +217,6 @@ class Client(object):
         try:
             r.raise_for_status()
         except:
-            print r.content
             raise
 
     def _put(self, template, data, **kwargs):
