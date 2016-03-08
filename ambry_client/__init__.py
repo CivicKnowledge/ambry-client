@@ -117,6 +117,7 @@ class Client(object):
 
         o = self._get(self.list_t)
 
+
         return [ Dataset( self, b ) for b in o['bundles'] ]
 
     def dataset(self, ref):
@@ -213,7 +214,11 @@ class Client(object):
     def _process_status(self, r):
         if r.status_code == 404:
             raise NotFoundError("Not found: {}".format(r.request.url))
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except:
+            print r.content
+            raise
 
     def _put(self, template, data, **kwargs):
         import json

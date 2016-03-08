@@ -43,7 +43,7 @@ class Library(Client):
 
         return self._put(self.accounts_t, data=new_accounts)['accounts']
 
-    def checkin(self, package, checkin_partitions=True, cb=None):
+    def checkin(self, package, checkin_partitions=True, force=False, cb=None):
         from ambry.orm.exc import NotFoundError
         import os.path
 
@@ -65,6 +65,11 @@ class Library(Client):
             bundle = Bundle(ds, package.library)
 
             for p in bundle.partitions:
+
+                if force:
+                    pass
+                    # FIXME! If Force is false, check if the partition exists and don't upload it,
+
                 self._put_partition_fs(remote, p, cb=cb)
 
         return self, package.path

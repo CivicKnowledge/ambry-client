@@ -28,11 +28,8 @@ def download_partition(args, client, p):
         fn = os.path.join(args.dir, fn)
         jfn = os.path.join(args.dir, jfn)
 
-
     def cb(m):
         print(m)
-
-
 
     try:
         if not os.path.exists(fn):
@@ -57,7 +54,6 @@ def download_partition(args, client, p):
 
         if os.path.exists(fn):
             os.remove(fn)
-
 
 def main():
     from requests.exceptions import HTTPError

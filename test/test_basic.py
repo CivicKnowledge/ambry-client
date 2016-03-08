@@ -2,6 +2,7 @@
 from flask import Flask
 from flask.ext.testing import LiveServerTestCase
 from ambry_client import Client
+import unittest
 
 import os
 os.environ['AMBRY_DB'] = 'sqlite:////tmp/foo.db'
